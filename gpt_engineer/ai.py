@@ -37,7 +37,7 @@ class TokenUsage:
 
 
 class AI:
-    def __init__(self, model_name="gpt-4", temperature=0.1):
+    def __init__(self, model_name="gpt-3.5-turbo", temperature=0.1):
         self.temperature = temperature
         self.model_name = fallback_model(model_name)
         self.llm = create_chat_model(self.model_name, temperature)
@@ -163,14 +163,7 @@ def fallback_model(model: str) -> str:
 
 
 def create_chat_model(model: str, temperature) -> BaseChatModel:
-    if model == "gpt-4":
-        return ChatOpenAI(
-            model="gpt-4",
-            temperature=temperature,
-            streaming=True,
-            client=openai.ChatCompletion,
-        )
-    elif model == "gpt-3.5-turbo":
+    if model == "gpt-3.5-turbo":
         return ChatOpenAI(
             model="gpt-3.5-turbo",
             temperature=temperature,
@@ -182,7 +175,7 @@ def create_chat_model(model: str, temperature) -> BaseChatModel:
 
 
 def get_tokenizer(model: str):
-    if "gpt-4" in model or "gpt-3.5" in model:
+    if "gpt-3.5" in model:
         return tiktoken.encoding_for_model(model)
 
     logger.debug(

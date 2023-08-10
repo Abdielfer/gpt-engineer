@@ -1,15 +1,18 @@
 import sys
-sys.path.append('C:\\Users\\User\\Documents\\GitHub\\gpt-engineer') # Path to gpt-engineer folder 
+# sys.path.append('C:\\Users\\User\\Documents\\GitHub\\gpt-engineer') # Path to gpt-engineer folder 
+sys.path.append('C:/Users/abfernan/CrossCanFloodMapping/TestingNew/gpt-engineer/gpt_engineer/')
+
 import logging
-
 from pathlib import Path
-
 import typer
 
+import gpt_engineer.db as db
 from gpt_engineer.ai import AI, fallback_model
 from gpt_engineer.collect import collect_learnings
-from gpt_engineer.db import DB, DBs, archive
-from gpt_engineer.learning import collect_consent
+from db import archive
+from db import DB, DBs
+import gpt_engineer.learning as learning
+from learning import collect_consent
 from gpt_engineer.steps import STEPS, Config as StepsConfig
 
 app = typer.Typer()
@@ -28,10 +31,7 @@ def main(
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
 
     model = fallback_model(model)
-    ai = AI(
-        model_name=model,
-        temperature=temperature,
-    )
+    ai = AI()
 
     input_path = Path(project_path).absolute()
     memory_path = input_path / "memory"
