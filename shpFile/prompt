@@ -1,1 +1,1 @@
-Create a python function to read shape files with GDAL and return the shape file bounding box.
+Create a python program to read shape files with GDAL and return the shapefile's bounding box.

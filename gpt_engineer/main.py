@@ -4,7 +4,7 @@ sys.path.append('C:/Users/abfernan/CrossCanFloodMapping/TestingNew/gpt-engineer/
 
 import logging
 from pathlib import Path
-import typer
+import typer 
 
 import gpt_engineer.db as db
 from gpt_engineer.ai import AI, fallback_model
@@ -31,11 +31,11 @@ def main(
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
 
     model = fallback_model(model)
-    ai = AI(model = model, temperature=temperature)
+    ai = AI(model_name = model, temperature=temperature)
 
     input_path = Path(project_path).absolute()
     memory_path = input_path / "memory"
-    workspace_path = input_path / "workspace"
+    workspace_path = input_path / "workspcace"
     archive_path = input_path / "archive"
 
     dbs = DBs(

@@ -1,0 +1,50 @@
+Based on the requirements and assumptions, here is the proposed architecture for the Python program:
+
+1. `shapefile_reader.py`: This module will contain the main logic to read the shape file and extract the bounding box.
+
+   - `get_shapefile_bounding_box(shapefile_path: str) -> Tuple[float, float, float, float]`: This function takes the path to the shape file as input and returns the bounding box coordinates as a tuple of four floats: (min_x, min_y, max_x, max_y).
+
+2. `main.py`: This will be the entry point of the program.
+
+Now, let's proceed with implementing the code for each file.
+
+`shapefile_reader.py`
+```python
+import os
+from typing import Tuple
+from osgeo import ogr
+
+def get_shapefile_bounding_box(shapefile_path: str) -> Tuple[float, float, float, float]:
+    if not os.path.exists(shapefile_path):
+        raise FileNotFoundError(f"Shape file not found at path: {shapefile_path}")
+
+    driver = ogr.GetDriverByName("ESRI Shapefile")
+    shapefile = driver.Open(shapefile_path, 0)
+    if shapefile is None:
+        raise ValueError(f"Failed to open shape file at path: {shapefile_path}")
+
+    layer = shapefile.GetLayer()
+    extent = layer.GetExtent()
+
+    shapefile.Destroy()
+
+    return extent
+```
+
+`main.py`
+```python
+from shapefile_reader import get_shapefile_bounding_box
+
+def main():
+    shapefile_path = input("Enter the path to the shape file: ")
+    try:
+        bounding_box = get_shapefile_bounding_box(shapefile_path)
+        print(f"Bounding Box: {bounding_box}")
+    except Exception as e:
+        print(f"Error: {str(e)}")
+
+if __name__ == "__main__":
+    main()
+```
+
+This completes the implementation of the Python program to read shape files with GDAL and return the shape file's bounding box.
