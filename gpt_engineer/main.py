@@ -1,3 +1,5 @@
+import sys
+sys.path.append('C:\\Users\\User\\Documents\\GitHub\\gpt-engineer') # Path to gpt-engineer folder 
 import logging
 
 from pathlib import Path
@@ -16,7 +18,7 @@ app = typer.Typer()
 @app.command()
 def main(
     project_path: str = typer.Argument("projects/example", help="path"),
-    model: str = typer.Argument("gpt-4", help="model id string"),
+    model: str = typer.Argument("gpt-3.5-turbo", help="model id string"),
     temperature: float = 0.1,
     steps_config: StepsConfig = typer.Option(
         StepsConfig.DEFAULT, "--steps", "-s", help="decide which steps to run"
