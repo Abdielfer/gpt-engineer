@@ -21,7 +21,7 @@ app = typer.Typer()
 @app.command()
 def main(
     project_path: str = typer.Argument("projects/example", help="path"),
-    model: str = typer.Argument("gpt-3.5-turbo", help="model id string"),
+    model: str ="gpt-3.5-turbo",
     temperature: float = 0.1,
     steps_config: StepsConfig = typer.Option(
         StepsConfig.DEFAULT, "--steps", "-s", help="decide which steps to run"
@@ -31,7 +31,7 @@ def main(
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
 
     model = fallback_model(model)
-    ai = AI()
+    ai = AI(model = model, temperature=temperature)
 
     input_path = Path(project_path).absolute()
     memory_path = input_path / "memory"

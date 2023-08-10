@@ -89,8 +89,7 @@ class AI:
 
         return messages
 
-    @staticmethod
-    def serialize_messages(messages: List[Message]) -> str:
+    def serialize_messages(self, messages: List[Message]) -> str:
         return json.dumps(messages_to_dict(messages))
 
     @staticmethod
