@@ -1,38 +1,3 @@
-Based on the requirements, here is the proposed architecture:
-
-1. `reproject_crop.py`: This is the entrypoint file that contains the main function to reproject and crop the TIFF file using a shapefile as a mask.
-
-2. `gdal_utils.py`: This module contains utility functions to handle the GDAL operations, such as reprojection and cropping.
-
-Now, let's proceed with the implementation.
-
-`reproject_crop.py`
-```python
-import gdal_utils
-
-def reproject_crop_tif(tif_file, shapefile, output_file):
-    """
-    Reprojects and crops a TIFF file using a shapefile as a mask.
-
-    Args:
-        tif_file (str): Path to the input TIFF file.
-        shapefile (str): Path to the input shapefile.
-        output_file (str): Path to the output TIFF file.
-
-    Returns:
-        str: Path to the output TIFF file.
-    """
-    # Reproject the TIFF file
-    reprojected_file = gdal_utils.reproject_tif(tif_file, output_crs='EPSG:4326')
-
-    # Crop the reprojected TIFF file using the shapefile as a mask
-    cropped_file = gdal_utils.crop_tif(reprojected_file, shapefile, output_file)
-
-    return cropped_file
-```
-
-`gdal_utils.py`
-```python
 import os
 from osgeo import gdal, ogr, osr
 
@@ -120,14 +85,3 @@ def crop_tif(tif_file, shapefile, output_file):
     shapefile_ds = None
 
     return output_file
-```
-
-This architecture consists of two files: `reproject_crop.py` and `gdal_utils.py`. The `reproject_crop.py` file contains the main function `reproject_crop_tif` which orchestrates the reprojection and cropping process. The `gdal_utils.py` file contains utility functions `reproject_tif` and `crop_tif` that handle the GDAL operations.
-
-The `reproject_tif` function in `gdal_utils.py` reprojects the input TIFF file to the specified CRS using GDAL's `gdal.Warp` function. It takes the input TIFF file path and the output CRS as arguments and returns the path to the reprojected TIFF file.
-
-The `crop_tif` function in `gdal_utils.py` crops the input TIFF file using the provided shapefile as a mask. It takes the input TIFF file path, shapefile path, and output file path as arguments and returns the path to the cropped TIFF file.
-
-The `reproject_crop_tif` function in `reproject_crop.py` is the entrypoint function that calls the `reproject_tif` and `crop_tif` functions in `gdal_utils.py` to perform the reprojection and cropping. It takes the input TIFF file path, shapefile path, and output file path as arguments and returns the path to the cropped TIFF file.
-
-Please note that the code assumes that the necessary GDAL and OGR libraries are installed and accessible in the Python environment. Additionally, appropriate error handling and validation can be added to the code as per specific requirements.

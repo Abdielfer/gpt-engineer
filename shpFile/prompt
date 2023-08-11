@@ -1,1 +1,4 @@
-Create a python program to read shape files with GDAL and return the shapefile's bounding box.
+Create a python function to reproject and crop a tif file using a shape files as mask. Use GDAL. return a tif file.
+
+
+
