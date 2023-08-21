@@ -1,0 +1,27 @@
+from csv_reader import CSVReader
+from tiff_reader import TIFFReader
+from multilayer_tiff_writer import MultiLayerTiffWriter
+
+def main(csv_file_path: str):
+    # Read the CSV file
+    paths = CSVReader.read_csv(csv_file_path)
+    
+    # Read the TIFF files and extract necessary information
+    image_data = []
+    file_extension = None
+    crs = None
+    for path in paths:
+        data, ext, crs = TIFFReader.read_tiff(path)
+        if data is not None:
+            image_data.append(data)
+            if file_extension is None:
+                file_extension = ext
+    
+    # Write the multilayer geotiff file
+    if file_extension is not None and crs is not None:
+        output_file_path = f"multyLayer_{paths[0].split('/')[-1]}"
+        MultiLayerTiffWriter.write_multilayer_tiff(output_file_path, image_data, file_extension, crs)
+
+if __name__ == "__main__":
+    csv_file_path = "input.csv"
+    main(csv_file_path)
