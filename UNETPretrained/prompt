@@ -1,0 +1,8 @@
+Implement a full python program to train and evaluate a UNET model.The task is a pixelwhise binary classification. Use the refferences from the git repository [https://github.com/milesial/Pytorch-UNet.git]. The program must be written in python and use pytorch. The program must be able to run on a GPU. The inputs of the model are images in geotif format with 3 layers and the labels are geotif images of 1 layers. Training, validation and test sets will be provided separately.
+The output of the model must be a mask of 1 layer with values 0-1.
+Use -> net = torch.hub.load('milesial/Pytorch-UNet', 'unet_carvana', pretrained=True, scale=0.5) to 
+load the pretrained model. 
+ The model architeture must have a classification head from the milesial implementation. The following metrics must be provided with training: - Loss - Accuracy - Precision - Recall - IoU. . The model must be trained with the following parameters: - Batch size: 4 - Epochs: 50 - Optimizer: Adam - Learning rate: 0.0001, schedule : plateau,  - Loss function: BCEWithLogitsLoss - Metrics: Loss, Accuracy, Precision, Recall, IoU - Validation split: 0.1 - Shuffle: True - Augmentation: RandomHorizontalFlip, RandomVerticalFlip, RandomRotate90. The model must be saved in the folder: UNETPretrained/model. the input image are 384-384 and the output mask is 384-384. The input image are in the folder: UNETPretrained/input and the output mask are in the folder: UNETPretrained/output. 
+The weights of the model must be initialized with a normal distribution with means=0 and std= 0.01. Use torch.nn.init.normal_ to Initialize the wheights. 
+The batch normalization must be excecuted after avery pooling layer in the encoder and decoder.
+The model will be evaluated with an independent dataset. 

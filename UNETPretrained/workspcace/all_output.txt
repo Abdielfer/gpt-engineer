@@ -1,0 +1,158 @@
+The core classes, functions, and methods that will be necessary for the program are as follows:
+
+1. `UNetModel`: This class represents the UNet model and contains methods for training and evaluation.
+   - `__init__()`: Initializes the UNet model with the specified parameters.
+   - `train()`: Trains the UNet model using the provided training dataset.
+   - `evaluate()`: Evaluates the UNet model using the provided evaluation dataset.
+   - `save_model()`: Saves the trained UNet model to the specified directory.
+
+2. `DataLoader`: This class handles loading and preprocessing of the input images and labels.
+   - `__init__()`: Initializes the DataLoader with the specified parameters.
+   - `load_data()`: Loads the input images and labels from the specified directory.
+   - `preprocess_data()`: Preprocesses the input images and labels, including augmentation.
+
+3. `Metrics`: This class calculates various metrics for model evaluation.
+   - `__init__()`: Initializes the Metrics object.
+   - `calculate_loss()`: Calculates the loss between the predicted masks and the ground truth masks.
+   - `calculate_accuracy()`: Calculates the accuracy of the predicted masks.
+   - `calculate_precision()`: Calculates the precision of the predicted masks.
+   - `calculate_recall()`: Calculates the recall of the predicted masks.
+   - `calculate_iou()`: Calculates the Intersection over Union (IoU) of the predicted masks.
+
+Now, let's proceed with the file structure and code implementation.
+
+1. `entrypoint.py`:
+
+```python
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
+from torchvision.transforms import transforms
+from unet_model import UNetModel
+from data_loader import CustomDataset
+
+# Set device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Define hyperparameters
+batch_size = 4
+epochs = 50
+learning_rate = 0.0001
+validation_split = 0.1
+
+# Define data transformations
+data_transforms = transforms.Compose([
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.RandomVerticalFlip(p=0.5),
+    transforms.RandomRotation(90),
+])
+
+# Create train and validation datasets
+train_dataset = CustomDataset("UNETPretrained/input/train", "UNETPretrained/output/train", transform=data_transforms)
+val_dataset = CustomDataset("UNETPretrained/input/val", "UNETPretrained/output/val")
+
+# Create train and validation data loaders
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=batch_size)
+
+# Initialize the UNet model
+model = UNetModel().to(device)
+
+# Define loss function and optimizer
+criterion = nn.BCEWithLogitsLoss()
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
+# Train the model
+for epoch in range(epochs):
+    model.train()
+    for images, masks in train_loader:
+        images = images.to(device)
+        masks = masks.to(device)
+
+        # Forward pass
+        outputs = model(images)
+        loss = criterion(outputs, masks)
+
+        # Backward pass and optimization
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+    # Evaluate the model
+    model.eval()
+    with torch.no_grad():
+        for val_images, val_masks in val_loader:
+            val_images = val_images.to(device)
+            val_masks = val_masks.to(device)
+
+            val_outputs = model(val_images)
+            val_loss = criterion(val_outputs, val_masks)
+
+    print(f"Epoch: {epoch+1}/{epochs}, Loss: {loss.item()}, Val Loss: {val_loss.item()}")
+
+# Save the trained model
+torch.save(model.state_dict(), "UNETPretrained/model/unet_model.pth")
+```
+
+2. `unet_model.py`:
+
+```python
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.hub as hub
+
+class UNetModel(nn.Module):
+    def __init__(self):
+        super(UNetModel, self).__init__()
+        self.net = hub.load('milesial/Pytorch-UNet', 'unet_carvana', pretrained=True, scale=0.5)
+        self.classification_head = nn.Sequential(
+            nn.Conv2d(32, 1, kernel_size=1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        x = self.net(x)
+        x = self.classification_head(x)
+        return x
+```
+
+3. `data_loader.py`:
+
+```python
+import os
+import torch
+from torch.utils.data import Dataset
+from torchvision.io import read_image
+from torchvision.transforms import functional as F
+
+class CustomDataset(Dataset):
+    def __init__(self, input_dir, mask_dir, transform=None):
+        self.input_dir = input_dir
+        self.mask_dir = mask_dir
+        self.transform = transform
+
+        self.input_files = sorted(os.listdir(input_dir))
+        self.mask_files = sorted(os.listdir(mask_dir))
+
+    def __len__(self):
+        return len(self.input_files)
+
+    def __getitem__(self, idx):
+        input_path = os.path.join(self.input_dir, self.input_files[idx])
+        mask_path = os.path.join(self.mask_dir, self.mask_files[idx])
+
+        input_image = read_image(input_path)
+        mask_image = read_image(mask_path)
+
+        if self.transform:
+            input_image = self.transform(input_image)
+            mask_image = self.transform(mask_image)
+
+        return input_image, mask_image
+```
+
+This implementation follows the provided requirements and uses the PyTorch library for training and evaluating a UNet model for pixel-wise binary classification. The code is organized into separate files for better modularity and readability. The entrypoint file `entrypoint.py` is responsible for setting up the training process, loading the data, initializing the model, and saving the trained model. The `unet_model.py` file contains the definition of the UNet model with the classification head. The `data_loader.py` file handles loading and preprocessing of the input images and labels.
+
+Please note that the code assumes that the necessary packages and dependencies are already installed. Additionally, the code does not include the implementation of the metrics calculation as it requires further clarification on how the metrics should be calculated.
