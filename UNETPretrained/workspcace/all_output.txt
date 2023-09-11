@@ -1,98 +1,63 @@
-The core classes, functions, and methods that will be necessary for the program are as follows:
+Based on the requirements and assumptions, here are the core classes, functions, and methods that will be necessary:
 
-1. `UNetModel`: This class represents the UNet model and contains methods for training and evaluation.
-   - `__init__()`: Initializes the UNet model with the specified parameters.
-   - `train()`: Trains the UNet model using the provided training dataset.
-   - `evaluate()`: Evaluates the UNet model using the provided evaluation dataset.
-   - `save_model()`: Saves the trained UNet model to the specified directory.
+1. `UNetModel` class: This class will define the UNet model architecture and provide methods for training and evaluation.
+   - `__init__()`: Initialize the UNet model with the specified parameters.
+   - `train()`: Train the UNet model using the provided training dataset.
+   - `evaluate()`: Evaluate the UNet model using the provided test dataset.
+   - `save_model()`: Save the trained UNet model to a specified directory.
 
-2. `DataLoader`: This class handles loading and preprocessing of the input images and labels.
-   - `__init__()`: Initializes the DataLoader with the specified parameters.
-   - `load_data()`: Loads the input images and labels from the specified directory.
-   - `preprocess_data()`: Preprocesses the input images and labels, including augmentation.
+2. `DataLoader` class: This class will handle loading and preprocessing of the input and output images.
+   - `__init__()`: Initialize the DataLoader with the specified dataset directory and other parameters.
+   - `load_data()`: Load the input and output images from the dataset directory.
+   - `preprocess_data()`: Preprocess the input and output images, including augmentation techniques.
+   - `split_data()`: Split the dataset into training and validation sets.
 
-3. `Metrics`: This class calculates various metrics for model evaluation.
-   - `__init__()`: Initializes the Metrics object.
-   - `calculate_loss()`: Calculates the loss between the predicted masks and the ground truth masks.
-   - `calculate_accuracy()`: Calculates the accuracy of the predicted masks.
-   - `calculate_precision()`: Calculates the precision of the predicted masks.
-   - `calculate_recall()`: Calculates the recall of the predicted masks.
-   - `calculate_iou()`: Calculates the Intersection over Union (IoU) of the predicted masks.
+3. `Metrics` class: This class will provide functions to calculate metrics such as Loss, Accuracy, Precision, Recall, and IoU.
+   - `calculate_loss()`: Calculate the loss between the predicted and target masks.
+   - `calculate_accuracy()`: Calculate the accuracy of the predicted masks.
+   - `calculate_precision()`: Calculate the precision of the predicted masks.
+   - `calculate_recall()`: Calculate the recall of the predicted masks.
+   - `calculate_iou()`: Calculate the Intersection over Union (IoU) of the predicted masks.
 
-Now, let's proceed with the file structure and code implementation.
+Now, let's proceed with the implementation of each file.
 
 1. `entrypoint.py`:
 
 ```python
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader
-from torchvision.transforms import transforms
+from datetime import datetime
 from unet_model import UNetModel
-from data_loader import CustomDataset
+from data_loader import DataLoader
 
-# Set device
+# Set the device to GPU if available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Define hyperparameters
-batch_size = 4
-epochs = 50
-learning_rate = 0.0001
-validation_split = 0.1
+# Define the dataset directory
+dataset_dir = "UNETPretrained"
 
-# Define data transformations
-data_transforms = transforms.Compose([
-    transforms.RandomHorizontalFlip(p=0.5),
-    transforms.RandomVerticalFlip(p=0.5),
-    transforms.RandomRotation(90),
-])
+# Initialize the DataLoader
+data_loader = DataLoader(dataset_dir)
 
-# Create train and validation datasets
-train_dataset = CustomDataset("UNETPretrained/input/train", "UNETPretrained/output/train", transform=data_transforms)
-val_dataset = CustomDataset("UNETPretrained/input/val", "UNETPretrained/output/val")
+# Load the input and output images
+input_images, output_masks = data_loader.load_data()
 
-# Create train and validation data loaders
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=batch_size)
+# Preprocess the input and output images
+preprocessed_images, preprocessed_masks = data_loader.preprocess_data(input_images, output_masks)
+
+# Split the dataset into training and validation sets
+train_data, val_data = data_loader.split_data(preprocessed_images, preprocessed_masks)
 
 # Initialize the UNet model
-model = UNetModel().to(device)
-
-# Define loss function and optimizer
-criterion = nn.BCEWithLogitsLoss()
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+model = UNetModel(device=device)
 
 # Train the model
-for epoch in range(epochs):
-    model.train()
-    for images, masks in train_loader:
-        images = images.to(device)
-        masks = masks.to(device)
+model.train(train_data, val_data)
 
-        # Forward pass
-        outputs = model(images)
-        loss = criterion(outputs, masks)
+# Evaluate the model
+model.evaluate(val_data)
 
-        # Backward pass and optimization
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-    # Evaluate the model
-    model.eval()
-    with torch.no_grad():
-        for val_images, val_masks in val_loader:
-            val_images = val_images.to(device)
-            val_masks = val_masks.to(device)
-
-            val_outputs = model(val_images)
-            val_loss = criterion(val_outputs, val_masks)
-
-    print(f"Epoch: {epoch+1}/{epochs}, Loss: {loss.item()}, Val Loss: {val_loss.item()}")
-
-# Save the trained model
-torch.save(model.state_dict(), "UNETPretrained/model/unet_model.pth")
+# Save the model
+model.save_model("Model_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
 ```
 
 2. `unet_model.py`:
@@ -100,59 +65,166 @@ torch.save(model.state_dict(), "UNETPretrained/model/unet_model.pth")
 ```python
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.hub as hub
+import torch.optim as optim
+from torchvision.transforms import Compose
+from torchvision.transforms.functional import to_tensor
+from metrics import Metrics
 
-class UNetModel(nn.Module):
-    def __init__(self):
-        super(UNetModel, self).__init__()
-        self.net = hub.load('milesial/Pytorch-UNet', 'unet_carvana', pretrained=True, scale=0.5)
-        self.classification_head = nn.Sequential(
-            nn.Conv2d(32, 1, kernel_size=1),
-            nn.Sigmoid()
-        )
+class UNetModel:
+    def __init__(self, device):
+        self.device = device
+        self.model = torch.hub.load('milesial/Pytorch-UNet', 'unet_carvana', pretrained=True, scale=0.5)
+        self.model.to(device)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=0.0001)
+        self.loss_fn = nn.BCEWithLogitsLoss()
+        self.metrics = Metrics()
 
-    def forward(self, x):
-        x = self.net(x)
-        x = self.classification_head(x)
-        return x
+    def train(self, train_data, val_data, batch_size=4, epochs=50):
+        # Training loop
+        for epoch in range(epochs):
+            self.model.train()
+            train_loss = 0.0
+            train_acc = 0.0
+            train_precision = 0.0
+            train_recall = 0.0
+            train_iou = 0.0
+
+            for i in range(0, len(train_data), batch_size):
+                batch_images = train_data[i:i+batch_size]
+                batch_masks = val_data[i:i+batch_size]
+
+                batch_images = torch.stack([to_tensor(img) for img in batch_images]).to(self.device)
+                batch_masks = torch.stack([to_tensor(mask) for mask in batch_masks]).to(self.device)
+
+                self.optimizer.zero_grad()
+
+                # Forward pass
+                outputs = self.model(batch_images)
+
+                # Calculate loss
+                loss = self.loss_fn(outputs, batch_masks)
+                train_loss += loss.item()
+
+                # Backward pass and optimization
+                loss.backward()
+                self.optimizer.step()
+
+                # Calculate metrics
+                train_acc += self.metrics.calculate_accuracy(outputs, batch_masks)
+                train_precision += self.metrics.calculate_precision(outputs, batch_masks)
+                train_recall += self.metrics.calculate_recall(outputs, batch_masks)
+                train_iou += self.metrics.calculate_iou(outputs, batch_masks)
+
+            # Calculate average metrics
+            train_loss /= len(train_data) / batch_size
+            train_acc /= len(train_data) / batch_size
+            train_precision /= len(train_data) / batch_size
+            train_recall /= len(train_data) / batch_size
+            train_iou /= len(train_data) / batch_size
+
+            # Print metrics for the epoch
+            print(f"Epoch {epoch+1}/{epochs}:")
+            print(f"Train Loss: {train_loss:.4f}")
+            print(f"Train Accuracy: {train_acc:.4f}")
+            print(f"Train Precision: {train_precision:.4f}")
+            print(f"Train Recall: {train_recall:.4f}")
+            print(f"Train IoU: {train_iou:.4f}")
+
+    def evaluate(self, test_data):
+        self.model.eval()
+        test_loss = 0.0
+        test_acc = 0.0
+        test_precision = 0.0
+        test_recall = 0.0
+        test_iou = 0.0
+
+        with torch.no_grad():
+            for i in range(len(test_data)):
+                test_image = test_data[i][0]
+                test_mask = test_data[i][1]
+
+                test_image = to_tensor(test_image).unsqueeze(0).to(self.device)
+                test_mask = to_tensor(test_mask).unsqueeze(0).to(self.device)
+
+                # Forward pass
+                output = self.model(test_image)
+
+                # Calculate loss
+                loss = self.loss_fn(output, test_mask)
+                test_loss += loss.item()
+
+                # Calculate metrics
+                test_acc += self.metrics.calculate_accuracy(output, test_mask)
+                test_precision += self.metrics.calculate_precision(output, test_mask)
+                test_recall += self.metrics.calculate_recall(output, test_mask)
+                test_iou += self.metrics.calculate_iou(output, test_mask)
+
+        # Calculate average metrics
+        test_loss /= len(test_data)
+        test_acc /= len(test_data)
+        test_precision /= len(test_data)
+        test_recall /= len(test_data)
+        test_iou /= len(test_data)
+
+        # Print evaluation metrics
+        print("Evaluation Metrics:")
+        print(f"Test Loss: {test_loss:.4f}")
+        print(f"Test Accuracy: {test_acc:.4f}")
+        print(f"Test Precision: {test_precision:.4f}")
+        print(f"Test Recall: {test_recall:.4f}")
+        print(f"Test IoU: {test_iou:.4f}")
+
+    def save_model(self, save_dir):
+        torch.save(self.model.state_dict(), save_dir)
 ```
 
 3. `data_loader.py`:
 
 ```python
 import os
-import torch
-from torch.utils.data import Dataset
-from torchvision.io import read_image
-from torchvision.transforms import functional as F
+import random
+from PIL import Image
 
-class CustomDataset(Dataset):
-    def __init__(self, input_dir, mask_dir, transform=None):
-        self.input_dir = input_dir
-        self.mask_dir = mask_dir
-        self.transform = transform
+class DataLoader:
+    def __init__(self, dataset_dir):
+        self.dataset_dir = dataset_dir
 
-        self.input_files = sorted(os.listdir(input_dir))
-        self.mask_files = sorted(os.listdir(mask_dir))
+    def load_data(self):
+        input_dir = os.path.join(self.dataset_dir, "input")
+        output_dir = os.path.join(self.dataset_dir, "output")
 
-    def __len__(self):
-        return len(self.input_files)
+        input_images = []
+        output_masks = []
 
-    def __getitem__(self, idx):
-        input_path = os.path.join(self.input_dir, self.input_files[idx])
-        mask_path = os.path.join(self.mask_dir, self.mask_files[idx])
+        for filename in os.listdir(input_dir):
+            if filename.endswith(".tif"):
+                input_path = os.path.join(input_dir, filename)
+                output_path = os.path.join(output_dir, filename)
 
-        input_image = read_image(input_path)
-        mask_image = read_image(mask_path)
+                input_image = Image.open(input_path)
+                output_mask = Image.open(output_path)
 
-        if self.transform:
-            input_image = self.transform(input_image)
-            mask_image = self.transform(mask_image)
+                input_images.append(input_image)
+                output_masks.append(output_mask)
 
-        return input_image, mask_image
-```
+        return input_images, output_masks
 
-This implementation follows the provided requirements and uses the PyTorch library for training and evaluating a UNet model for pixel-wise binary classification. The code is organized into separate files for better modularity and readability. The entrypoint file `entrypoint.py` is responsible for setting up the training process, loading the data, initializing the model, and saving the trained model. The `unet_model.py` file contains the definition of the UNet model with the classification head. The `data_loader.py` file handles loading and preprocessing of the input images and labels.
+    def preprocess_data(self, input_images, output_masks):
+        # Apply augmentation techniques
+        preprocessed_images = []
+        preprocessed_masks = []
 
-Please note that the code assumes that the necessary packages and dependencies are already installed. Additionally, the code does not include the implementation of the metrics calculation as it requires further clarification on how the metrics should be calculated.
+        for i in range(len(input_images)):
+            input_image = input_images[i]
+            output_mask = output_masks[i]
+
+            # Apply augmentation techniques here
+
+            preprocessed_images.append(input_image)
+            preprocessed_masks.append(output_mask)
+
+        return preprocessed_images, preprocessed_masks
+
+    def split_data(self, input_images, output_masks, validation_split=0.1):
+        data = list(zip(input_images, output_masks))
+        random.shuffle(data)

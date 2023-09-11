@@ -1,14 +1,11 @@
 # Create a virtual environment
-python3 -m venv myenv
+python3 -m venv env
 
 # Activate the virtual environment
-source myenv/bin/activate
+source env/bin/activate
 
-# Install PyTorch and torchvision
-pip install torch torchvision
+# Install the required packages
+pip install torch torchvision pillow
 
-# Install torch-hub
-pip install torch-hub
-
-# Run the entrypoint.py file
+# Run the entrypoint.py script
 python entrypoint.py

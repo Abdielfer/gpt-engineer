@@ -1,19 +1,20 @@
 import sys
-# sys.path.append('C:\\Users\\User\\Documents\\GitHub\\gpt-engineer') # Path to gpt-engineer folder 
+sys.path.append('C:\\Users\\User\\Documents\\GitHub\\gpt-engineer\\') # Path to gpt-engineer folder 
 sys.path.append('C:/Users/abfernan/CrossCanFloodMapping/TestingNew/gpt-engineer/gpt_engineer/')
+
 
 import logging
 from pathlib import Path
 import typer 
 
-import gpt_engineer.db as db
-from gpt_engineer.ai import AI, fallback_model
-from gpt_engineer.collect import collect_learnings
+import db as db
+from ai import AI, fallback_model
+from collect import collect_learnings
 from db import archive
 from db import DB, DBs
-import gpt_engineer.learning as learning
+import learning as learning
 from learning import collect_consent
-from gpt_engineer.steps import STEPS, Config as StepsConfig
+from steps import STEPS, Config as StepsConfig
 
 app = typer.Typer()
 

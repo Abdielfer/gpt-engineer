@@ -2,10 +2,10 @@ import hashlib
 
 from typing import List
 
-from gpt_engineer import steps
-from gpt_engineer.db import DBs
-from gpt_engineer.domain import Step
-from gpt_engineer.learning import Learning, extract_learning
+import steps
+from db import DBs
+from domain import Step
+from learning import Learning, extract_learning
 
 
 def send_learning(learning: Learning):
